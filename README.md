@@ -1,113 +1,220 @@
-## 🪿 HONC
+# URL Content Analyzer & Summarizer MCP Server
 
-This is a project created with the `create-honc-app` template.
+A powerful MCP (Model Context Protocol) server that analyzes web content and generates AI-powered summaries with email delivery capabilities. Perfect for n8n workflows and automation.
 
-Learn more about the HONC stack on the [website](https://honc.dev) or the main [repo](https://github.com/fiberplane/create-honc-app).
+## 🎯 What This Does
 
-There is also an [Awesome HONC collection](https://github.com/fiberplane/awesome-honc) with further guides, use cases and examples.
+- **Web Content Analysis**: Scrapes and analyzes any URL
+- **AI-Powered Summaries**: Uses Cloudflare Workers AI to generate intelligent summaries
+- **Email Integration**: Sends beautifully formatted email summaries via Resend
+- **Smart Tagging**: Automatically generates relevant content tags
+- **Persistent Storage**: Saves all analyses in Cloudflare D1 database
+- **n8n Ready**: Perfect webhook endpoints for workflow automation
 
-### Getting started
-[D1](https://developers.cloudflare.com/d1/) is Cloudflare's serverless SQL database. Running HONC with a D1 database involves two key steps: first, setting up the project locally, and second, deploying it in production. You can spin up your D1 database locally using Wrangler. If you're planning to deploy your application for production use, ensure that you have created a D1 instance in your Cloudflare account.
+## 🚀 Quick Start (Use Shared Demo Server)
 
-### Project structure
+### Connect to the Live MCP Server
 
-```#
-├── src
-│   ├── index.ts # Hono app entry point
-│   └── db
-│       └── schema.ts # Database schema
-├── .dev.vars.example # Example .dev.vars file
-├── .prod.vars.example # Example .prod.vars file
-├── seed.ts # Optional script to seed the db
-├── drizzle.config.ts # Drizzle configuration
-├── package.json
-├── tsconfig.json # TypeScript configuration
-└── wrangler.jsonc # Cloudflare Workers configuration
+1. **In Fiberplane Codegen Chat:**
+   - Use the MCP server connection feature
+   - Connect to: `https://f25330579cf6d535790c1106.fp.dev/mcp`
+   - Name it: "URL Content Analyzer"
+
+2. **Available MCP Tools:**
+   - `analyze_url` - Analyze any URL and get AI summary
+   - `get_summaries` - Retrieve stored summaries with filtering
+   - `search_content` - Search through analyzed content
+   - `get_url_details` - Get detailed info about specific URLs
+   - `email_analysis` - Analyze URL and email the summary
+
+### Example Usage in Chat
+```
+Analyze this URL: https://example.com
 ```
 
-### Commands for local development
+or
 
-Run the migrations and (optionally) seed the database:
-
-```sh
-# this is a convenience script that runs db:touch, db:generate, db:migrate, and db:seed
-npm run db:setup
+```
+Analyze https://example.com and email the summary to user@example.com
 ```
 
-Run the development server:
 
-```sh
-npm run dev
+## 🔗 n8n Integration
+
+### Key Endpoints for n8n Workflows
+
+**Analyze and Email (Recommended)**
+```
+POST https://f25330579cf6d535790c1106.fp.dev/webhook/analyze-and-email
+Content-Type: application/json
 ```
 
-As you iterate on the database schema, you'll need to generate a new migration file and apply it like so:
-
-```sh
-npm run db:generate
-npm run db:migrate
-```
-
-### Commands for deployment
-
-Before deploying your worker to Cloudflare, ensure that you have a running D1 instance on Cloudflare to connect your worker to.
-
-You can create a D1 instance by navigating to the `Workers & Pages` section and selecting `D1 SQL Database.`
-
-Alternatively, you can create a D1 instance using the CLI:
-
-```sh
-npx wrangler d1 create <database-name>
-```
-
-After creating the database, update the `wrangler.jsonc` file with the database id.
-
-```jsonc
+```json
 {
-    // ...
-    "d1_databases": [
-        {
-            "binding": "DB",
-            "database_name": "honc-d1-database",
-            "database_id": "<database-id-you-just-created>",
-            "migrations_dir": "drizzle/migrations"
-        }
-    ],
-    // ...
+  "url": "https://example.com",
+  "email": "user@example.com",
+  "subject": "Optional custom subject"
 }
 ```
 
-Include the following information in a `.prod.vars` file:
 
-```sh
-CLOUDFLARE_D1_TOKEN="" # An API token with D1 edit permissions. You can create API tokens from your Cloudflare profile
-CLOUDFLARE_ACCOUNT_ID="" # Find your Account id on the Workers & Pages overview (upper right)
-CLOUDFLARE_DATABASE_ID="" # Find the database ID under workers & pages under D1 SQL Database and by selecting the created database
+**Just Analyze**
+```
+POST https://f25330579cf6d535790c1106.fp.dev/webhook/analyze
+Content-Type: application/json
 ```
 
-If you haven’t generated the latest migration files yet, run:
-```shell
-npm run db:generate
-```
-
-Afterwards, run the migration script for production:
-```shell
-npm run db:migrate:prod
-```
-
-Change the name of the project in `wrangler.jsonc` to something appropriate for your project:
-
-```jsonc
+```json
 {
-    "name": "my-d1-project",
-    // ...
+  "url": "https://example.com",
+  "generate_tags": true,
+  "summary_length": "medium"
 }
 ```
 
-Finally, deploy your worker
 
-```shell
-npm run deploy
+**Batch Processing**
+```
+POST https://f25330579cf6d535790c1106.fp.dev/webhook/batch-analyze
+Content-Type: application/json
+```
+
+```json
+{
+  "urls": ["https://example1.com", "https://example2.com"],
+  "email": "user@example.com",
+  "subject_prefix": "Daily Digest"
+}
 ```
 
 
-# Article-Summarizer-MCP
+### Example n8n Workflows
+
+1. **Simple Content Analysis**
+   ```
+   Form Input → HTTP Request (analyze-and-email) → Done!
+   ```
+
+2. **Daily News Digest**
+   ```
+   RSS Feed → Extract URLs → Batch Analyze → Email Summary
+   ```
+
+3. **Slack Integration**
+   ```
+   Slack Webhook → Analyze URL → Post Summary Back to Slack
+   ```
+
+
+## 🏗️ Deploy Your Own Instance
+
+### Prerequisites
+
+- Fiberplane Codegen account
+- Resend account (free tier: 3,000 emails/month)
+- Basic understanding of Cloudflare Workers
+
+### Step 1: Get Your Resend API Key
+
+1. Sign up at [resend.com](https://resend.com)
+2. Go to API Keys section
+3. Create a new API key
+4. Copy the key (starts with `re_`)
+
+### Step 2: Create Your Fiberplane Project
+
+1. **Create New Project** in Fiberplane Codegen
+2. **Copy the Code Files:**
+   - **SPEC.md** - Copy the complete specification
+   - **src/db/schema.ts** - Copy the database schema
+   - **src/index.ts** - Copy the main application code
+
+### Step 3: Configure Secrets
+
+In your Fiberplane project, set the secret:
+```
+RESEND_API_KEY=your_resend_api_key_here
+```
+
+
+### Step 4: Deploy
+
+1. Deploy your project through Fiberplane Codegen
+2. Your MCP server will be available at: `https://your-app-id.fp.dev/mcp`
+3. API endpoints will be at: `https://your-app-id.fp.dev/webhook/*`
+
+### Step 5: Test Your Deployment
+
+Test the email functionality:
+```bash
+curl -X POST https://your-app-id.fp.dev/webhook/analyze-and-email \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com",
+    "email": "your@email.com"
+  }'
+```
+
+## 📊 Features & Capabilities
+
+### Content Analysis
+- Extracts title, content, and metadata
+- Handles various content types (articles, blogs, news)
+- Word count and reading time estimation
+- Content type detection
+
+### AI Summarization
+- Powered by Cloudflare Workers AI
+- Configurable summary length (short, medium, long)
+- Context-aware summarization
+- Automatic tag generation
+
+### Email Features
+- Beautiful HTML email templates
+- Responsive design
+- Content previews
+- Batch processing support
+- Error handling and delivery confirmation
+
+### Database Storage
+- Persistent storage in Cloudflare D1
+- Full-text search capabilities
+- Duplicate detection
+- Status tracking (pending, completed, failed)
+
+## 🔧 Technical Stack
+
+- **Runtime**: Cloudflare Workers
+- **Framework**: Hono.js
+- **Database**: Cloudflare D1 (SQLite)
+- **ORM**: Drizzle ORM
+- **AI**: Cloudflare Workers AI
+- **Email**: Resend API
+- **Protocol**: MCP (Model Context Protocol)
+
+## 📝 API Documentation
+
+Full OpenAPI documentation available at:
+```
+https://your-app-id.fp.dev/openapi.json
+```
+## 🤝 Contributing
+
+This project was built for the Fiberplane + n8n hackathon. Feel free to:
+
+- Fork and modify for your needs
+- Submit improvements
+- Share your n8n workflow examples
+
+## 🏆 Hackathon Context
+
+Built for the Fiberplane + n8n Hackathon to demonstrate:
+
+- MCP server development
+- n8n workflow integration
+- Cloudflare Workers deployment
+- AI-powered content analysis
+- Email automation workflows
+
+Perfect for creating automated content analysis pipelines, news digests, research workflows, and more!
+
